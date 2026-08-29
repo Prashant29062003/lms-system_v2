@@ -27,6 +27,10 @@ class DatabaseConnection {
       this.isConnected = false;
       this.handleDisconnection();
     });
+
+    // Handle Application Termination
+    process.on("SIGINT", this.handleTermination.bind(this));
+    process.on("SIGTERM", this.handleTermination.bind(this));
   }
 
   async connect() {
@@ -78,5 +82,30 @@ class DatabaseConnection {
       await this.connect();
     }
   }
-  
+
+
+  async handleTermination() {
+    try {
+        await mongoose.connection.close();
+        console.log("MongoDB connection is closed through app termination.")
+        process.exit(0);
+    } catch (error) {
+        console.error("Error during MongoDB disconnection:", error);
+        process.exit(1);
+    }
+  }
+
+  getConnectionStatus(){
+    return {
+        isconnected: this.isConnected,
+        readyState: mongoose.connection.readyState,
+        host: mongoose.connection.host,
+        name: mongoose.connection.name
+    }
+  }
 }
+
+
+const dbConnection = new DatabaseConnection();
+export default dbConnection.connect.bind(this);
+export const getConnectionStatus = dbConnection.getConnectionStatus.bind(this);
